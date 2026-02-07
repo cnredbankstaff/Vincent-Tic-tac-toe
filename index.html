@@ -102,6 +102,68 @@
     .current-turn {
       animation: pulse-glow 1.5s ease-in-out infinite;
     }
+    
+    @keyframes particle-rise {
+      0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0);
+      }
+    }
+    
+    .particle {
+      position: fixed;
+      pointer-events: none;
+      font-size: 32px;
+      animation: particle-rise 2s ease-out forwards;
+      z-index: 100;
+    }
+    
+    @keyframes confetti-fall {
+      0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(720deg);
+      }
+    }
+    
+    .confetti {
+      position: fixed;
+      pointer-events: none;
+      font-size: 28px;
+      animation: confetti-fall 3s ease-in forwards;
+      z-index: 99;
+    }
+    
+    @keyframes screen-flash {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 0.3; }
+    }
+    
+    .win-flash {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #00ffaa, #00c8ff);
+      animation: screen-flash 0.6s ease-out;
+      pointer-events: none;
+      z-index: 90;
+    }
+    
+    @keyframes trophy-bounce {
+      0% { transform: scale(0) rotate(-180deg); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    
+    .trophy-animation {
+      animation: trophy-bounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
@@ -500,6 +562,9 @@
       }
       
       setTimeout(() => {
+        // Create all celebration effects
+        createWinEffects(result);
+        
         showWinnerModal(result);
         updateScores(result);
       }, 500);
@@ -570,9 +635,6 @@
       document.getElementById('game-screen').classList.add('hidden');
       document.getElementById('setup-screen').classList.remove('hidden');
       gameState.scores = { X: 0, O: 0, draws: 0 };
-      gameState.humanPlayers = { X: 0, O: 0 };
-      gameState.players.X.name = '';
-      gameState.players.O.name = '';
       document.getElementById('x-score').textContent = '0';
       document.getElementById('o-score').textContent = '0';
       document.getElementById('draws').textContent = '0';
@@ -659,6 +721,97 @@
       }
       return false;
     }
+
+    function createParticles(x, y, emoji = '✨') {
+      const particleCount = 18;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.textContent = emoji;
+        
+        // Random angle for spread
+        const angle = (i / particleCount) * Math.PI * 2;
+        const distance = 120;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        
+        // Set position and CSS variables
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        particle.style.setProperty('--tx', tx + 'px');
+        particle.style.setProperty('--ty', ty + 'px');
+        
+        // Add slight randomness to animation
+        particle.style.animationDuration = (1.5 + Math.random() * 0.8) + 's';
+        particle.style.animationDelay = (Math.random() * 0.1) + 's';
+        
+        document.body.appendChild(particle);
+        
+        // Remove particle after animation completes
+        setTimeout(() => {
+          if (particle.parentNode) {
+            particle.remove();
+          }
+        }, 2500);
+      }
+    }
+
+    function createWinEffects(result) {
+      // Screen flash effect
+      const flash = document.createElement('div');
+      flash.className = 'win-flash';
+      document.body.appendChild(flash);
+      
+      setTimeout(() => flash.remove(), 600);
+      
+      // Animated trophy bounce
+      const winnerIcon = document.getElementById('winner-icon');
+      winnerIcon.classList.add('trophy-animation');
+      
+      // Confetti rain across screen
+      createConfetti();
+      
+      // Center burst particles
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      
+      if (result === 'draw') {
+        createParticles(centerX, centerY, '🎉');
+      } else {
+        createParticles(centerX, centerY, result === 'X' ? '✕' : '○');
+      }
+    }
+
+    function createConfetti() {
+      const confettiEmojis = ['🎉', '✨', '⭐', '🌟', '💫', '🎊', '🏆', '👏'];
+      const confettiCount = 40;
+      
+      for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.textContent = confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)];
+        
+        // Random horizontal position
+        confetti.style.left = Math.random() * window.innerWidth + 'px';
+        confetti.style.top = '-50px';
+        
+        // Random delay for staggered effect
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        
+        // Random duration for variety
+        confetti.style.animationDuration = (2.5 + Math.random() * 1) + 's';
+        
+        document.body.appendChild(confetti);
+        
+        // Remove after animation
+        setTimeout(() => {
+          if (confetti.parentNode) {
+            confetti.remove();
+          }
+        }, 3500);
+      }
+    }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c9e6002f2d35e6a',t:'MTc3MDQxOTk5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c9e9baa315eadf8',t:'MTc3MDQyMjQzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
